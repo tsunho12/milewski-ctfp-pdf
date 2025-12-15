@@ -1,0 +1,31 @@
+name: Build CTFP PDF
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    steps:
+    # 1. 拉取代码
+    - uses: actions/checkout@v4
+
+    # 2. 安装 Nix (这是关键，它会自动读取 flake.nix 安装 texlive, python 等所有依赖)
+    - uses: cachix/install-nix-action@v27
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+    # 3. 执行构建
+    # 这里对应 flake.nix 中的 output，.#ctfp 是默认版本
+    - name: Build PDF
+      run: nix build .#ctfp
+
+    # 4. 上传构建产物 (这样你就能在网页上下载了)
+    - name: Upload PDF Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ctfp-book
+        path: result/ctfp.pdf
+        if-no-files-found: error
